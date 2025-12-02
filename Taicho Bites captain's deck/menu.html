@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Menu & Order – Taicho Bites</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  
+  
+  <style>
+    :root {
+      --orange: #FF6A00;
+      --brown: #8B4513;
+      --dark-brown: #5D2E0A;
+      --light-bg: #FFF8F0;
+      --text: #333;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--light-bg); color: var(--text); line-height:1.6; }
+
+    /* Same header as before */
+    header {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); z-index: 1000;
+      padding: 1rem 5%; display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .logo { font-size: 2rem; font-weight: 800; color: var(--orange); text-decoration: none; }
+    .nav-links a { text-decoration: none; color: var(--text); font-weight: 500; margin: 0 1rem; }
+    .nav-links a:hover { color: var(--orange); }
+    .order-btn { background: var(--orange); color: white; padding: 0.7rem 1.5rem; border-radius: 50px; font-weight: 600; }
+    .cart-icon { position: relative; font-size: 1.5rem; cursor: pointer; }
+    .cart-count { position: absolute; top: -8px; right: -10px; background: var(--orange); color: white; font-size: 0.8rem; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .hamburger { display: none; font-size: 1.8rem; cursor: pointer; }
+    @media (max-width: 768px) {
+      .hamburger { display: block; }
+      .nav-links { position: fixed; top: 70px; left: 0; right: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(12px); flex-direction: column; padding: 2rem; transform: translateY(-150%); transition: transform 0.4s ease; }
+      .nav-links.active { transform: translateY(0); }
+    }
+
+    main { margin-top: 90px; padding: 2rem 5%; max-width: 1400px; margin-left: auto; margin-right: auto; }
+    .page-title { text-align: center; font-size: 3rem; color: var(--dark-brown); margin: 2rem 0 3rem; }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 3rem; padding-bottom: 1rem; border-bottom: 2px solid #eee; }
+    .tab { padding: 0.8rem 1.8rem; background: white; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .tab.active { background: var(--orange); color: white; }
+
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 4rem; }
+    .menu-item { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.1); transition: transform 0.3s; }
+    .menu-item:hover { transform: translateY(-8px); }
+    .menu-item img { width: 100%; height: 200px; object-fit: cover; }
+    .item-info { padding: 1.5rem; }
+    .item-info h3 { font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--dark-brown); }
+    .description { font-size: 0.95rem; color: #666; margin-bottom: 1rem; }
+    .price-add { display: flex; justify-content: space-between; align-items: center; }
+    .price { font-size: 1.5rem; font-weight: 700; color: var(--orange); }
+    .add-btn { background: var(--orange); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; }
+
+    .cart-summary { position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark-brown); color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); transform: translateY(100%); transition: transform 0.4s; z-index: 999; }
+    .cart-summary.show { transform: translateY(0); }
+    .checkout-btn { background: var(--orange); color: white; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1.1rem; }
+    @media (min-width: 769px) {
+      .cart-summary { position: static; transform: none; background: white; color: var(--text); margin-top: 3rem; padding: 2rem; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    }
+
+    /* Delivery Modal */
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 2000;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: white; width: 90%; max-width: 500px; border-radius: 20px; padding: 2rem; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h2 { color: var(--dark-brown); }
+    .close-modal { font-size: 1.8rem; cursor: pointer; color: #999; }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+    .form-group input, .form-group textarea { width: 100%; padding: 1rem; border: 2px solid #eee; border-radius: 12px; font-size: 1rem; }
+    .form-group textarea { height: 100px; resize: none; }
+    .order-summary { background: var(--light-bg); padding: 1rem; border-radius: 12px; margin: 1.5rem 0; }
+    .summary-item { display: flex; justify-content: space-between; padding: 0.5rem 0; }
+    .total-row { font-weight: 700; font-size: 1.3rem; color: var(--orange); border-top: 2px dashed #ccc; padding-top: 1rem; margin-top: 1rem; }
+    .pay-now-btn { width: 100%; background: var(--orange); color: white; border: none; padding: 1.2rem; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Same header & menu as before (24 dishes) -->
+  <header>
+    <a href="index1.html" class="logo">Taicho Bites</a>
+    <nav class="nav-links" id="navLinks">
+      <a href="index1.html"><i class="fas fa-home"></i> Home</a>
+      <a href="menu.html"><i class="fas fa-shopping-cart"></i> Menu & Order</a>
+      <a href="About.html"><i class="fas fa-info-circle"></i> About</a>
+      <a href="Contact.html"><i class="fas fa-phone"></i> Contact</a>
+      <a href="menu.html" class="order-btn"><i class="fas fa-shopping-cart"></i>Order Now</a>
+    </nav>
+    <div class="cart-icon">
+      <i class="fas fa-shopping-cart"></i>
+      <span class="cart-count" id="cartCount">0</span>
+    </div>
+    <div class="hamburger" id="hamburger"><i class="fas fa-bars"></i></div>
+  </header>
+
+  <main>
+    <h1 class="page-title">Menu & Order</h1>
+
+    <div class="tabs">
+      <button class="tab active" data-category="all">All</button>
+      <button class="tab" data-category="rice">Rice Dishes</button>
+      <button class="tab" data-category="soup">Soups & Swallow</button>
+      <button class="tab" data-category="sides">Sides & Snacks</button>
+      <button class="tab" data-category="drinks">Drinks</button>
+      <button class="tab" data-category="other">Others</button>
+    </div>
+
+    <div class="menu-grid" id="menuGrid">
+      <!-- All 24 dishes from previous version go here (exactly the same) -->
+      <!-- I've kept them exactly as before to save space, just copy-paste from last message -->
+      <!-- Example (repeat all 24): -->
+      <div class="menu-item" data-category="rice">
+        <img src="Images/jollof.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Jollof Rice</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="rice">
+        <img src="Images/fried.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Fried Rice</h3><p class="description">Smoky party Fried Rice with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="sides">
+        <img src="Images/akara.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Akara and Pap</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="other">
+        <img src="Images/spagetti.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Spagetii</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="other">
+        <img src="Images/suya.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Beef Suya</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+
+      <div class="menu-item" data-category="other">
+        <img src="Images/beans.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Beans and Bread</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="other">
+        <img src="Images/kilishi.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Kilishi</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="rice">
+        <img src="Images/stew.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Rice and Stew</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+
+
+      <div class="menu-item" data-category="soup">
+        <img src="Images/amala.jpg" alt="Jollof Rice">
+        <div class="item-info"><h3>Amala and Ewedu Soup</h3><p class="description">Rich Ewedu with beef or chicken</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+      <div class="menu-item" data-category="sides">
+        <img src="Images/samosa.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Samosa</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="sides">
+        <img src="Images/plantain.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Plantain</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+
+
+      <div class="menu-item" data-category="drinks">
+        <img src="Images/zobo.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Zobo</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="drinks">
+        <img src="Images/kunun aya.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Kunun Aya</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+
+      <div class="menu-item" data-category="other">
+        <img src="Images/waina.jpeg" alt="Jollof Rice">
+        <div class="item-info"><h3>Waina</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="sides">
+        <img src="Images/awara.jpeg" alt="awara">
+        <div class="item-info"><h3>Awara</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="soup">
+        <img src="Images/kuka.jpeg" alt="kuka">
+        <div class="item-info"><h3>Miyan Kuka</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <div class="menu-item" data-category="soup">
+        <img src="Images/egusi.jpeg" alt="egusi">
+        <div class="item-info"><h3>Egusi and Poundo</h3><p class="description">Smoky party jollof with chicken or beef</p><div class="price-add"><span class="price">₦3,500</span><button class="add-btn">+</button></div></div>
+      </div>
+
+      <!-- ... all other items ... -->
+    </div>
+
+    <div class="cart-summary" id="cartSummary">
+      <div><span id="cartItems">0 items</span> • <strong class="cart-total">₦0</strong></div>
+      <button class="checkout-btn">Proceed to Checkout</button>
+    </div>
+  </main>
+
+  <!-- Delivery Address Modal -->
+  <div class="modal" id="deliveryModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Delivery Details</h2>
+        <span class="close-modal" id="closeModal">×</span>
+      </div>
+      <form id="deliveryForm">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="customerName" required />
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="customerPhone" required placeholder="e.g. 08012345678" />
+        </div>
+        <div class="form-group">
+          <label>Delivery Address</label>
+          <input type="text" id="customerAddress" required placeholder="House number, street, area" />
+        </div>
+        <div class="form-group">
+          <label>City / Area (Kaduna only)</label>
+          <input type="text" id="customerCity" required placeholder="e.g. Rigasa, Zaria, Igabi" />
+        </div>
+        <div class="form-group">
+          <label>Additional Notes (optional)</label>
+          <textarea id="customerNotes" placeholder="e.g. Gate code, call when close..."></textarea>
+        </div>
+
+        <div class="order-summary">
+          <div class="summary-item"><span>Items:</span><span id="summaryItems">0 items</span></div>
+          <div class="summary-item"><span>Delivery Fee:</span><span>₦1,500</span></div>
+          <div class="total-row"><span>Total:</span><span id="summaryTotal">₦0</span></div>
+        </div>
+
+        <button type="submit" class="pay-now-btn">Pay with Paystack →</button>
+      </form>
+    </div>
+  </div>
+
+<script>
+  // Cart & menu code (same as before)
+  let cart = [];
+  const cartCount = document.getElementById('cartCount');
+  const cartItemsText = document.getElementById('cartItems');
+  const cartTotal = document.querySelector('.cart-total');
+  const cartSummary = document.getElementById('cartSummary');
+  const modal = document.getElementById('deliveryModal');
+  const closeModal = document.getElementById('closeModal');
+
+  document.querySelectorAll('.add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.menu-item');
+      const name = item.querySelector('h3').textContent;
+      const price = parseInt(item.querySelector('.price').textContent.replace('₦','').replace(',',''));
+      cart.push({ name, price });
+      updateCart();
+    });
+  });
+
+  function updateCart() {
+    cartCount.textContent = cart.length;
+    cartItemsText.textContent = `\( {cart.length} item \){cart.length !== 1 ? 's' : ''}`;
+    const total = cart.reduce((sum, i) => sum + i.price, 0);
+    cartTotal.textContent = `₦${total.toLocaleString()}`;
+    cartSummary.classList.add('show');
+  }
+
+  // Open delivery modal
+  document.querySelector('.checkout-btn').addEventListener('click', () => {
+    if (cart.length === 0) return alert('Your cart is empty!');
+    modal.classList.add('active');
+    document.getElementById('summaryItems').textContent = `\( {cart.length} item \){cart.length !== 1 ? 's' : ''}`;
+    const total = cart.reduce((sum, i) => sum + i.price, 0) + 1500;
+    document.getElementById('summaryTotal').textContent = `₦${total.toLocaleString()}`;
+  });
+
+  closeModal.addEventListener('click', () => modal.classList.remove('active'));
+  window.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+
+  // Mobile menu toggle
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('active');
+    document.querySelector('.hamburger i').classList.toggle('fa-bars');
+    document.querySelector('.hamburger i').classList.toggle('fa-times');
+  });
+
+  // Category filter (same as before)
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelector('.tab.active').classList.remove('active');
+      tab.classList.add('active');
+      const cat = tab.dataset.category;
+      document.querySelectorAll('.menu-item').forEach(item => {
+        item.style.display = (cat === 'all' || item.dataset.category === cat) ? 'block' : 'none';
+      });
+    });
+  });
+
+  // PAYSTACK AFTER FORM SUBMISSION
+  document.getElementById('deliveryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('customerName').value.trim();
+    const phone = document.getElementById('customerPhone').value.trim();
+    const address = document.getElementById('customerAddress').value.trim();
+    const city = document.getElementById('customerCity').value.trim();
+
+    if (!name || !phone || !address || !city) {
+      return alert('Please fill all required fields');
+    }
+
+    const totalWithDelivery = cart.reduce((sum, i) => sum + i.price, 0) + 1500;
+
+    let handler = PaystackPop.setup({
+      key: 'pk_test_YOUR_KEY_HERE', // ← Replace with your real key
+      email: phone + '@taichobites.com',
+      amount: totalWithDelivery * 100,
+      currency: 'NGN',
+      ref: 'TAICHO' + Date.now(),
+      metadata: {
+        custom_fields: [
+          { display_name: "Customer", variable_name: "name", value: name },
+          { display_name: "Phone", variable_name: "phone", value: phone },
+          { display_name: "Address", variable_name: "address", value: address + ', ' + city },
+          { display_name: "Items", variable_name: "items", value: cart.map(i => i.name).join(', ') }
+        ]
+      },
+      callback: function(response) {
+        alert('Payment successful! Order confirmed. Reference: ' + response.reference);
+        cart = [];
+        updateCart();
+        modal.classList.remove('active');
+        document.getElementById('deliveryForm').reset();
+      },
+      onClose: function() {
+        alert('Payment cancelled');
+      }
+    });
+    handler.openIframe();
+  });
+</script>
+
+</body>
+</html>

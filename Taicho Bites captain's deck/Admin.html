@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin • Taicho Bites (Captain's Deck)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root{--orange:#FF6A00;--brown:#8B4513;--dark-brown:#5D2E0A;--light:#FFF8F0;}
+    body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#fff;margin:0;padding:0;}
+    .login-screen{
+      height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#16213e);
+    }
+    .login-box{background:rgba(255,255,255,0.1);padding:3rem;border-radius:20px;backdrop-filter:blur(10px);text-align:center;width:90%;max-width:400px;}
+    input[type=password]{width:100%;padding:1rem;margin:1rem 0;border:none;border-radius:12px;font-size:1.1rem;}
+    button{background:var(--orange);color:white;border:none;padding:1rem 2rem;border-radius:50px;font-size:1.1rem;cursor:pointer;}
+
+    .dashboard{display:none;padding:2rem;background:#0f0f1a;min-height:100vh;}
+    header{background:#16213e;padding:1.5rem;text-align:center;}
+    .logo{font-size:2.5rem;font-weight:800;background:linear-gradient(90deg,#FF6A00,#FF8C00);;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;margin:2rem 0;}
+    .stat-card{background:#16213e;padding:1.5rem;border-radius:16px;text-align:center;}
+    .stat-card h3{font-size:2rem;margin:0.5rem 0;color:var(--orange);}
+    table{width:100%;border-collapse:collapse;margin-top:2rem;background:#16213e;border-radius:16px;overflow:hidden;}
+    th{background:var(--orange);padding:1rem;}
+    td{padding:1rem;text-align:center;border-bottom:1px solid #333;}
+    .status-pending{color:#FFD700;background:#333;padding:0.4rem 0.8rem;border-radius:50px;font-size:0.9rem;}
+    .status-delivered{color:#00FF00;background:#003300;}
+    .status-cancelled{color:#FF3333;background:#330000;}
+    .no-orders{text-align:center;padding:3rem;color:#888;font-size:1.2rem;}
+    .anime-captain{position:fixed;bottom:20px;right:20px;font-size:3rem;opacity:0.2;pointer-events:none;}
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <h1 style="background:linear-gradient(90deg,#FF6A00,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        Taicho Bites ⚔️
+      </h1>
+      <p>Captain's Deck • Admin Only</p>
+      <input type="password" id="adminPass" placeholder="Enter password" />
+      <br/>
+      <button onclick="checkPassword()">Enter Bridge</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <header>
+      <h1 class="logo">Taicho Bites <span style="font-size:1rem;">⚔️ Captain's Deck</span></h1>
+      <p>Live Orders • Kaduna Command Center</p>
+    </header>
+
+    <div class="stats">
+      <div class="stat-card"><h3 id="todayOrders">0</h3><p>Today's Orders</p></div>
+      <div class="stat-card"><h3 id="totalRevenue">₦0</h3><p>Today's Revenue</p></div>
+      <div class="stat-card"><h3 id="pendingOrders">0</h3><p>Pending Delivery</p></div>
+      <div class="stat-card"><h3 id="totalOrders">0</h3><p>All-Time Orders</p></div>
+    </div>
+
+    <table id="ordersTable">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Customer</th>
+          <th>Phone</th>
+          <th>Address</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="ordersBody">
+        <tr><td colspan="8" class="no-orders">No orders yet, Captain! Waiting for the first strike ⚔️</td></tr>
+      </tbody>
+    </table>
+
+    <div class="anime-captain">⚔️</div>
+  </div>
+
+<script>
+// Change this password to whatever you want
+const ADMIN_PASSWORD = "taicho2025";   // ← Change this!
+
+function checkPassword() {
+  if (document.getElementById('adminPass').value === ADMIN_PASSWORD) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadOrders();
+  } else {
+    alert('Wrong password, intruder! 🚨');
+  }
+}
+
+// Fake live orders (replace with real backend later)
+let orders = JSON.parse(localStorage.getItem('taichoOrders')) || [];
+
+function saveOrders() {
+  localStorage.setItem('taichoOrders', JSON.stringify(orders));
+}
+
+function loadOrders() {
+  const tbody = document.getElementById('ordersBody');
+  tbody.innerHTML = '';
+
+  if (orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="no-orders">No orders yet, Captain!</td></tr>';
+    return;
+  }
+
+  let todayRevenue = 0;
+  let pending = 0;
+  let todayCount = 0;
+  const today = new Date().toDateString();
+
+  orders.reverse().forEach((order, index) => {
+    if (new Date(order.time).toDateString() === today) {
+      todayRevenue += order.total;
+      todayCount++;
+      if (order.status === 'pending') pending++;
+    }
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${new Date(order.time).toLocaleTimeString()}</td>
+      <td>${order.name}</td>
+      <td>${order.phone}</td>
+      <td>${order.address}</td>
+      <td>${order.items}</td>
+      <td>₦${order.total.toLocaleString()}</td>
+      <td><span class="status-\( {order.status}"> \){order.status}</span></td>
+      <td>
+        \( {order.status === 'pending' ? `<button onclick="updateStatus( \){orders.length - 1 - index}, 'delivered')" style ="background:#00FF00;padding:0.5rem;border:none;border-radius:8px;color:#000;">✓ Delivered</button>` : 'Done'}
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  document.getElementById('todayOrders').textContent = todayCount;
+  document.getElementById('totalRevenue').textContent = `₦${todayRevenue.toLocaleString()}`;
+  document.getElementById('pendingOrders').textContent = pending;
+  document.getElementById('totalOrders').textContent = orders.length;
+}
+
+function updateStatus(index, status) {
+  orders[index].status = status;
+  saveOrders();
+  loadOrders();
+}
+
+// Listen for new orders from menu.html (same domain only)
+window.addEventListener('storage', (e) => {
+  if (e.key === 'taichoNewOrder') {
+    orders.push(JSON.parse(e.newValue));
+    saveOrders();
+    loadOrders();
+  }
+});
+</script>
+</body>
+</html>
