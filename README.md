@@ -11,14 +11,10 @@ https://YOURUSERNAME.github.io/taicho-bites-site
 - `menu.html` → Full Menu + Order + Paystack payment  
 - `about.html` → About Taicho  
 - `contact.html` → Contact  
-- `admin.html` → Admin dashboard (password protected)
 
 ### How to View
 Just open the live link above on any phone or laptop.  
 You can browse, add to cart, fill delivery form, and pay with Paystack (test card: 4084084084084081).
-
-### Admin Login
-Open `/admin.html` → Password: **taicho2025** (change it in the code if you want)
 
 Made with love by Huzaifa (Taicho)  
 Kaduna, Nigeria
