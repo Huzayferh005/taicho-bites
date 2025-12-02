@@ -3,7 +3,7 @@
 Official website for **Taicho Bites** – Fresh Nigerian food cooked the moment you order.
 
 ### Live Site
-https://YOURUSERNAME.github.io/taicho-bites-site  
+https://Huzayferh005.github.io/taicho-bites  
 (Replace YOURUSERNAME with your actual GitHub username after publishing)
 
 ### Pages
